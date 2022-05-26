@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { Weather } from '../weather';
+import { switchMap } from 'rxjs';
+import { LocationService } from '../location.service';
+import { CurrentWeather } from '../weather';
 import { WeatherService } from '../weather.service';
 
 @Component({
@@ -9,15 +11,22 @@ import { WeatherService } from '../weather.service';
 })
 export class WeatherComponent implements OnInit {
 
-  weather?: Weather;
+  weather?: CurrentWeather;
 
-  constructor(private weatherService: WeatherService) { }
+  constructor(private weatherService: WeatherService, private locationService: LocationService) { }
 
   ngOnInit(): void {
+    this.locationService.getClientLocation();
+
+    this.locationService.location$.pipe(
+      switchMap(({lat, lon}: CurrentWeather['coord']) => {
+        return this.weatherService.getFiveDayWeather(lat, lon);
+      })
+    ).subscribe();
   }
 
   search(city: string) {
-    this.weatherService.getWeather(city).subscribe(weather => {
+    this.weatherService.getCurrentWeather(city).subscribe(weather => {
       this.weather = weather;
     });
   }
